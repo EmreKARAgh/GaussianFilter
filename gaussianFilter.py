@@ -1,59 +1,25 @@
-import image
-import PIL
+from PIL import Image
 import numpy
-from PIL import Image, ImageMath
-def filtering(matris):
-    neighbormatrice = numpy.zeros(shape=(5, 5))#komsuluk matrisi
-    filtermatrice = [[1, 4, 6, 4, 1],#filtreleme referans matrisi(assagida elemanlar 256'ya bölünecektir)
-                     [4, 16, 24, 16, 4],
-                     [6, 24, 36, 24, 6],
-                     [4, 16, 36, 24, 6],
-                     [1, 4, 6, 4, 1]]
-    for k in range(5):
-        for l in range(5):
-            filtermatrice[k][l] = filtermatrice[k][l] / 256
-    toplam = 0.0
-    """""
-    YUMUSATMA YAPILIRKEN RESMİN ETRAFINDAN 2 PİKSEL GENİSLİGİNDE BİR CERCEVE İHMAL EDİLMİSTİR.
-    """
-    for i in range(2, w - 2):
-        for j in range(2, h - 2):
-            for k in range(5):#Pikseller icin komsuluk matrisi olusturulur
-                for l in range(5):
-                    neighbormatrice[k][l] = matris[k + i - 2][l + j - 2]
-            for k in range(5):##komsuluk matrisi filtreleme matrisiyle işleme sokulur
-                for l in range(5):
-                    toplam = toplam + (neighbormatrice[k][l] * filtermatrice[k][l])
-            matris[i][j] = toplam#islem sonucu yumusatmanin yapildigi pikselin degerine esitlenir
-    return matris
-#Resim import edilir
-im = Image.open("indir.jpg")
-#resmin boyutları
-w=259
-h=194
-#resmi dijitallestirerek, R degerleri icin bir matris olusturur
-red = numpy.zeros(shape = (w , h))
-for i in range(w):
+im = Image.open("source.jpg")
+w,h=im.size
+pix=numpy.zeros(shape=(w, h, 3),dtype=numpy.uint8)
+matris=numpy.zeros(shape=(w, h, 3),dtype=numpy.uint8)
+neighbormatrice = numpy.zeros(shape=(5, 5))#Neighbor matrice to be filtered pixel
+for i in range(w):  #Get and assign image's RGB values
    for j in range(h):
         rgb_im = im.convert('RGB')
         r , g , b = rgb_im.getpixel((i, j))
-        red[i][j]=r
-#resmi dijitallestirerek, G degerleri icin bir matris olusturur
-green = numpy.zeros(shape = (w , h))
-for i in range(w):
-   for j in range(h):
-        rgb_im = im.convert('RGB')
-        r , g , b = rgb_im.getpixel((i, j))
-        green[i][j]=g
-#resmi dijitallestirerek, B degerleri icin bir matris olusturur
-blue = numpy.zeros(shape = (w , h))
-for i in range(w):
-   for j in range(h):
-        rgb_im = im.convert('RGB')
-        r , g , b = rgb_im.getpixel((i, j))
-        blue[i][j]=b
-#R,G,B degerlerini iceren matrisler sırayla filtreleme fonksiyonuna gönderilip,fonksiyon cıktısına esitlenir
-red=filtering(red)
-print(red[29][142])
-green=filtering(green)
-blue=filtering(blue)
+        pix[i][j] =r, g, b
+        if (i >= 2 & i < (w - 2) & j >= 2 & j < (h - 2)):
+            for m in range(3):
+                toplam = 0.0
+                for k in range(5):
+                    for l in range(5):
+                        neighbormatrice[k][l] = matris[k + i - 2][l + j - 2][m]#Create neighbor matrice's indexs(exclude a frame size=2)
+                for k in range(5):
+                    for l in range(5):
+                        toplam = (toplam + (neighbormatrice[k][l] * 0.04))#0.04 is filter value.
+                matris[j][i][m] = int(toplam)
+img = Image.fromarray(matris, 'RGB')#Create an image with RGB values
+img.save('target.jpg')
+img.show()
